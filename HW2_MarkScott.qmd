@@ -1,0 +1,263 @@
+---
+title: "Week 2 Homework"
+author: "Mark Scott"
+html:
+    embed-resources: true
+    self-contained-math: true
+    link-external-newwindow: true
+    toc-depth: 2
+    smooth-scroll: true
+    theme: sandstone
+engine: knitr
+---
+
+# Setup
+
+First we need to load our libraries. Personally, for network analysis I prefer `network` and `sna`. But I have of course used other packages, so no sweat.
+
+```{r}
+set.seed(555)
+
+
+# Load in libs
+## Not necessary, but I like how clean it
+libs = c("igraph","ggplot2","ggraph","rio")
+invisible(lapply(libs, library, character.only = TRUE))
+```
+
+Now let us load in the data.
+
+```{r}
+URL = 'https://github.com/MarkGScott960/DACCS690C_HW2/raw/main/hollywood.graphml'
+actorsnet = read_graph(URL, format = 'graphml')
+summary(actorsnet)
+```
+
+# Node centrality Measures
+
+As you showed in the videos and HTML file, I will get the three centrality measures and put them in one nice `kable` table. I will also disregard the weights, otherwise `igraph` treats it as distances/costs, but the weight is number of collaborations. Of course, an argument can be made that the weights should be included in the eigenvector measure because `igraph` treats weights as connection strength; the weights are left out in the `eigen_centrality()` function because I am comparing all three measures.
+
+```{r}
+# Need to use weights = NA for all because there is a weight
+
+
+# Eigenvector Centrality
+
+eigenv = eigen_centrality(actorsnet, weights = NA)$vector 
+#Closeness
+nodeclose = closeness(actorsnet, normalized = T,weights = NA)
+
+# Betweenness
+
+betw = betweenness(actorsnet, normalized = T,weights = NA)
+
+# Create dataframe
+CentralityDF = tibble::tibble(
+  Actor = names(eigenv),
+  Eigenvector = eigenv,
+  Closeness = nodeclose,
+  Betweenness = betw)
+
+
+# Kable table
+CentralityDF |> 
+  dplyr::mutate(across(where(is.numeric), ~round(.,4))) |> 
+  kableExtra::kable()
+```
+
+
+## Correlation plot
+
+```{r}
+library(tidyverse)
+
+#Calculate correlation
+cormat = CentralityDF |> 
+  select(Eigenvector, Closeness, Betweenness) |> 
+  cor()
+
+# make tidy and wide
+corlong = as.data.frame(as.table(cormat))
+colnames(corlong) <- c("Var1", "Var2", "Correlation")
+
+#Plot
+
+ggplot(corlong, aes(x = Var1, y = Var2, fill = Correlation)) +
+  geom_tile(color = "white") +
+  geom_text(aes(label = round(Correlation, 2))) +
+  scale_fill_gradient2(
+    low = "blue",
+    mid = "white",
+    high = "red",
+    midpoint = 0,
+    limits = c(-1, 1)
+  ) +
+  theme_minimal()
+
+```
+
+
+Now for some quick interpretation of this correlation heatmap: 
+
+| Pair | Correlation | Interpretation | Take away|
+| ------------------------------ | ----------- | --------------------------------------- |-----------|
+| **Closeness vs Betweenness**   | **0.78**    | Strong positive relationship | Actors who are closer to everyone else in the network also tend to lie on many of the shortest paths between other actors. |
+| **Eigenvector vs Closeness**   | **0.84**   | Strong positive relationship | Actors with high eigenvector centrality have higher closeness. In other words, you can have very influential neighbors  which leads to being close to everyone else) |
+| **Eigenvector vs Betweenness** | **0.35**   | Weak positive relationship | An actor connected to influential actors does not necessarily serve as a bridge between different parts of the network |
+
+
+Overall, we see that all three of our measures of node centrality are positively correlated. The two strongest correlations are between Eigenvector/closeness, and closeness/betweenness. This does, of course make sense. If an ego knew someone who know many people who knew many people, I would have a reasonably larger network because of the increased alter-to-alter ties. 
+
+
+Of course, our dataset has a highly restrictive sample size, so we should not be stating these as facts. 
+
+# Hub nodes plot
+
+First lets see how many people are notable:
+
+```{r}
+ggplot(CentralityDF, aes(x=Betweenness, y=Closeness)) + 
+    theme_classic() +
+  ggrepel::geom_text_repel(aes(label=Actor,size=Eigenvector),show.legend = T,alpha=0.5) # using this instead of geom_text for readability
+  #geom_text(aes(label=Actor,size=Eigenvector),show.legend = T,alpha=0.5) 
+
+
+```
+
+
+
+
+```{r}
+#Define cutoff
+ImportantCut <-  0.8
+
+# Get names of the important ones
+HubNodes = CentralityDF |> dplyr::filter(Eigenvector >= ImportantCut)
+
+
+HubNodes  <- HubNodes$Actor
+
+
+
+V(actorsnet)$label <- ifelse(
+  V(actorsnet)$name %in% HubNodes,
+  V(actorsnet)$name,
+  ""
+)
+
+
+#Relabel attributes for easier reading
+V(actorsnet)$wonOscar=ifelse(V(actorsnet)$wonOscar==1,'Yes','No')
+
+
+
+ggraph(actorsnet) + 
+  geom_edge_link(aes(edge_width = as.ordered(weight)), color = 'grey70') + 
+  geom_node_point() + 
+  theme_graph(base_family = "sans") + #using sans otherwise getting a wall of warnings (default arial was not playing nice with my OS)
+  geom_node_text(aes(label = label, color = as.factor(wonOscar)), size = 5)+
+  labs(edge_width = "Movies in common", color = "Won Oscar as actor")
+
+```
+
+
+# Communities investigation
+
+First lets start looking if communities may be present.
+
+```{r}
+set.seed(555)
+
+# Random Transitivity
+
+repn = 1000
+
+randomtransit <-  replicate(repn, {
+  RandNet <- rewire(actorsnet, 
+                      keeping_degseq(niter = gsize(actorsnet) * 10))
+  transitivity(RandNet, type = "global")
+})
+meanRandTransit = mean(randomtransit)
+
+
+# Empirical Transitivity
+emptransit <- transitivity(actorsnet, type = "global")
+
+# Ratio
+
+ComTest <- tibble::tibble(
+  Metric = c("actorsnet transitivity", "randomnetwork mean", "Ratio"),
+  Value = round(c(
+    emptransit,
+    meanRandTransit,
+    emptransit / meanRandTransit),5)
+  )  
+ComTest|> 
+  knitr::kable()
+
+
+
+z_score <- (emptransit - mean(randomtransit)) / sd(randomtransit)
+p_value <- sum(randomtransit >= emptransit) / repn
+
+print(z_score)
+print(p_value)
+
+
+```
+
+As a general rule, if we see a ratio over 1 we can expect standard algorithms to detect communities, which we do indeed see (ratio = `r ComTest[3,2]`). However, with only `r length(V(actorsnet))` nodes and `r length(E(actorsnet))` edges, the null distribution is extremely noisy, so a p = `r p_value` means that we cannot rule out that this clustering arose out of chance. I will still proceed to community detection as communities may be present, but our data cannot provide statistically significant evidence.
+
+
+
+## Community Detection
+
+```{r}
+algs <- list(
+  louvain = {set.seed(555); cluster_louvain(actorsnet)},
+  Girvan_Newman = cluster_edge_betweenness(actorsnet)
+)
+
+# Table
+sumtab <- data.frame(
+  algorithm = names(algs),
+  n_clusters = sapply(algs, length),
+  modularity_Q = sapply(algs, modularity),
+  cluster_sizes = sapply(algs, function(cl) {
+    paste(sort(sizes(cl), decreasing = TRUE), collapse = ", ")})
+)
+
+# Sort then print
+sumtab <- sumtab[order(-sumtab$modularity_Q), ]
+rownames(sumtab) <- NULL
+
+kableExtra::kable(sumtab)
+```
+
+According to our results, the Girvan-Newman algorithm is slightly better with a higher modularity. 
+
+### Plot of Best Result
+
+```{r}
+
+for (name in names(algs)) {
+  memb <- membership(algs[[name]])
+  attr_name <- name
+  actorsnet <- set_vertex_attr(actorsnet, attr_name,
+                               index = names(memb),
+                               value = as.vector(memb))
+}
+
+bestAlg <-  sumtab$algorithm[1]
+
+ggraph(actorsnet) +
+          geom_edge_link(alpha=0.2)+
+  geom_node_point(aes(color=as.factor(.data[[bestAlg]])), show.legend = T, size=4)+
+    labs(color = paste("Community:", bestAlg),
+         title =paste("Community Detection", 
+                      sub("_","-",bestAlg), #fixes the underscore in Girvan-Newman
+                      "Algorithm"))
+
+```
+
+ 
