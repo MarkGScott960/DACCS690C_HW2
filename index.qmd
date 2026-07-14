@@ -1,0 +1,14 @@
+---
+title: "index"
+author: "Mark Scott"
+html:
+    embed-resources: true
+    self-contained-math: true
+    link-external-newwindow: true
+    toc-depth: 2
+    smooth-scroll: true
+    theme: sandstone
+engine: knitr
+---
+
+
