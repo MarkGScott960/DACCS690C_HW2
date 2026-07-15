@@ -240,6 +240,7 @@ According to our results, the Girvan-Newman algorithm is slightly better with a 
 
 ```{r}
 
+#set attributes
 for (name in names(algs)) {
   memb <- membership(algs[[name]])
   attr_name <- name
@@ -248,8 +249,10 @@ for (name in names(algs)) {
                                value = as.vector(memb))
 }
 
+#get best algorithm
 bestAlg <-  sumtab$algorithm[1]
 
+#graph it
 ggraph(actorsnet) +
           geom_edge_link(alpha=0.2)+
   geom_node_point(aes(color=as.factor(.data[[bestAlg]])), show.legend = T, size=4)+

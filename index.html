@@ -2269,7 +2269,7 @@ vertical-align: -.125em;
 <span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>actorsnet <span class="ot">=</span> <span class="fu">read_graph</span>(URL, <span class="at">format =</span> <span class="st">&#39;graphml&#39;</span>)</span>
 <span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(actorsnet) <span class="co"># what is the structure of the network</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>IGRAPH 50d8ef3 UNW- 11 14 -- 
+<pre><code>IGRAPH 0a5ba98 UNW- 11 14 -- 
 + attr: wonOscar (v/n), color (v/c), name (v/c), id (v/c), weight (e/n)</code></pre>
 </div>
 </div>
@@ -2638,23 +2638,26 @@ Source: community/edge_betweenness.c:503</code></pre>
 <section id="plot-of-best-result" class="level3">
 <h3 class="anchored" data-anchor-id="plot-of-best-result">Plot of Best Result</h3>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb19"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (name <span class="cf">in</span> <span class="fu">names</span>(algs)) {</span>
-<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a>  memb <span class="ot">&lt;-</span> <span class="fu">membership</span>(algs[[name]])</span>
-<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a>  attr_name <span class="ot">&lt;-</span> name</span>
-<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a>  actorsnet <span class="ot">&lt;-</span> <span class="fu">set_vertex_attr</span>(actorsnet, attr_name,</span>
-<span id="cb19-5"><a href="#cb19-5" aria-hidden="true" tabindex="-1"></a>                               <span class="at">index =</span> <span class="fu">names</span>(memb),</span>
-<span id="cb19-6"><a href="#cb19-6" aria-hidden="true" tabindex="-1"></a>                               <span class="at">value =</span> <span class="fu">as.vector</span>(memb))</span>
-<span id="cb19-7"><a href="#cb19-7" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb19-8"><a href="#cb19-8" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb19-9"><a href="#cb19-9" aria-hidden="true" tabindex="-1"></a>bestAlg <span class="ot">&lt;-</span>  sumtab<span class="sc">$</span>algorithm[<span class="dv">1</span>]</span>
-<span id="cb19-10"><a href="#cb19-10" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb19-11"><a href="#cb19-11" aria-hidden="true" tabindex="-1"></a><span class="fu">ggraph</span>(actorsnet) <span class="sc">+</span></span>
-<span id="cb19-12"><a href="#cb19-12" aria-hidden="true" tabindex="-1"></a>          <span class="fu">geom_edge_link</span>(<span class="at">alpha=</span><span class="fl">0.2</span>)<span class="sc">+</span></span>
-<span id="cb19-13"><a href="#cb19-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_node_point</span>(<span class="fu">aes</span>(<span class="at">color=</span><span class="fu">as.factor</span>(.data[[bestAlg]])), <span class="at">show.legend =</span> T, <span class="at">size=</span><span class="dv">4</span>)<span class="sc">+</span></span>
-<span id="cb19-14"><a href="#cb19-14" aria-hidden="true" tabindex="-1"></a>    <span class="fu">labs</span>(<span class="at">color =</span> <span class="fu">paste</span>(<span class="st">&quot;Community:&quot;</span>, bestAlg),</span>
-<span id="cb19-15"><a href="#cb19-15" aria-hidden="true" tabindex="-1"></a>         <span class="at">title =</span><span class="fu">paste</span>(<span class="st">&quot;Community Detection&quot;</span>, </span>
-<span id="cb19-16"><a href="#cb19-16" aria-hidden="true" tabindex="-1"></a>                      <span class="fu">sub</span>(<span class="st">&quot;_&quot;</span>,<span class="st">&quot;-&quot;</span>,bestAlg), <span class="co">#fixes the underscore in Girvan-Newman</span></span>
-<span id="cb19-17"><a href="#cb19-17" aria-hidden="true" tabindex="-1"></a>                      <span class="st">&quot;Algorithm&quot;</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb19"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="co">#set attributes</span></span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (name <span class="cf">in</span> <span class="fu">names</span>(algs)) {</span>
+<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a>  memb <span class="ot">&lt;-</span> <span class="fu">membership</span>(algs[[name]])</span>
+<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a>  attr_name <span class="ot">&lt;-</span> name</span>
+<span id="cb19-5"><a href="#cb19-5" aria-hidden="true" tabindex="-1"></a>  actorsnet <span class="ot">&lt;-</span> <span class="fu">set_vertex_attr</span>(actorsnet, attr_name,</span>
+<span id="cb19-6"><a href="#cb19-6" aria-hidden="true" tabindex="-1"></a>                               <span class="at">index =</span> <span class="fu">names</span>(memb),</span>
+<span id="cb19-7"><a href="#cb19-7" aria-hidden="true" tabindex="-1"></a>                               <span class="at">value =</span> <span class="fu">as.vector</span>(memb))</span>
+<span id="cb19-8"><a href="#cb19-8" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb19-9"><a href="#cb19-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-10"><a href="#cb19-10" aria-hidden="true" tabindex="-1"></a><span class="co">#get best algorithm</span></span>
+<span id="cb19-11"><a href="#cb19-11" aria-hidden="true" tabindex="-1"></a>bestAlg <span class="ot">&lt;-</span>  sumtab<span class="sc">$</span>algorithm[<span class="dv">1</span>]</span>
+<span id="cb19-12"><a href="#cb19-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-13"><a href="#cb19-13" aria-hidden="true" tabindex="-1"></a><span class="co">#graph it</span></span>
+<span id="cb19-14"><a href="#cb19-14" aria-hidden="true" tabindex="-1"></a><span class="fu">ggraph</span>(actorsnet) <span class="sc">+</span></span>
+<span id="cb19-15"><a href="#cb19-15" aria-hidden="true" tabindex="-1"></a>          <span class="fu">geom_edge_link</span>(<span class="at">alpha=</span><span class="fl">0.2</span>)<span class="sc">+</span></span>
+<span id="cb19-16"><a href="#cb19-16" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_node_point</span>(<span class="fu">aes</span>(<span class="at">color=</span><span class="fu">as.factor</span>(.data[[bestAlg]])), <span class="at">show.legend =</span> T, <span class="at">size=</span><span class="dv">4</span>)<span class="sc">+</span></span>
+<span id="cb19-17"><a href="#cb19-17" aria-hidden="true" tabindex="-1"></a>    <span class="fu">labs</span>(<span class="at">color =</span> <span class="fu">paste</span>(<span class="st">&quot;Community:&quot;</span>, bestAlg),</span>
+<span id="cb19-18"><a href="#cb19-18" aria-hidden="true" tabindex="-1"></a>         <span class="at">title =</span><span class="fu">paste</span>(<span class="st">&quot;Community Detection&quot;</span>, </span>
+<span id="cb19-19"><a href="#cb19-19" aria-hidden="true" tabindex="-1"></a>                      <span class="fu">sub</span>(<span class="st">&quot;_&quot;</span>,<span class="st">&quot;-&quot;</span>,bestAlg), <span class="co">#fixes the underscore in Girvan-Newman</span></span>
+<span id="cb19-20"><a href="#cb19-20" aria-hidden="true" tabindex="-1"></a>                      <span class="st">&quot;Algorithm&quot;</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stderr">
 <pre><code>Using &quot;stress&quot; as default layout</code></pre>
 </div>
